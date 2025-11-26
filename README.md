@@ -97,8 +97,8 @@ end
 
 1. **✅ Aggiungi un timer**: Fai durare il gioco 60 secondi - **COMPLETATO!**
 2. **✅ Aggiungi suoni**: Usa `love.audio` per aggiungere effetti sonori - **COMPLETATO!**
-3. **Aggiungi immagini**: Usa `love.graphics.newImage()` per caricare sprite
-4. **Nemici che si muovono**: Fai muovere i cerchi verdi casualmente
+3. **✅ Aggiungi immagini**: Usa `love.graphics.newImage()` per caricare sprite - **COMPLETATO!**
+4. **Nemici che si muovono**: Fai muovere i nemici casualmente
 5. **Power-up**: Aggiungi oggetti speciali che aumentano la velocità
 6. **High score**: Salva il punteggio migliore usando `love.filesystem`
 
@@ -187,6 +187,118 @@ end
 
 Questo crea un effetto di tensione crescente! Il suono diventa sempre più acuto.
 
+### 🖼️ Sprite Implementation Details
+
+Gli sprite vengono caricati e disegnati con rotazione e scala:
+
+```lua
+-- In love.load() - carica l'immagine
+playerShipImage = love.graphics.newImage("assets/images/playerShipBlue.png")
+
+-- In love.draw() - disegna con rotazione e scala
+local imgWidth = playerShipImage:getWidth()
+local imgHeight = playerShipImage:getHeight()
+love.graphics.draw(
+    playerShipImage,
+    player.x, player.y,           -- posizione
+    player.rotation,               -- rotazione in radianti
+    player.scale, player.scale,    -- scala x, y
+    imgWidth/2, imgHeight/2        -- origine (centro dell'immagine)
+)
+```
+
+**Concetti chiave:**
+- `love.graphics.newImage(path)` carica un'immagine
+- `:getWidth()` e `:getHeight()` restituiscono le dimensioni
+- L'**origine** determina il punto di rotazione (default: angolo in alto a sinistra)
+- Impostando l'origine al centro, lo sprite ruota su se stesso
+
+**Rotazione basata sulla direzione:**
+
+```lua
+-- Calcola l'angolo dalla direzione di movimento
+local dx, dy = 0, 0
+if love.keyboard.isDown("right") then dx = 1 end
+if love.keyboard.isDown("left") then dx = -1 end
+if love.keyboard.isDown("up") then dy = -1 end
+if love.keyboard.isDown("down") then dy = 1 end
+
+if dx ~= 0 or dy ~= 0 then
+    -- math.atan2 restituisce l'angolo in radianti
+    -- +pi/2 perché lo sprite punta verso l'alto (non a destra)
+    player.rotation = math.atan2(dy, dx) + math.pi/2
+end
+```
+
+### 🛸 Movimento Nemici - Strategie
+
+**1. Movimento con rimbalzo (consigliato per iniziare):**
+
+```lua
+-- Nella struttura del nemico
+enemy = {
+    x = math.random(50, 750),
+    y = math.random(50, 550),
+    vx = math.random(-100, 100),  -- velocità X
+    vy = math.random(-100, 100),  -- velocità Y
+    speed = math.random(50, 150),
+}
+
+-- In love.update(dt)
+for _, enemy in ipairs(enemies) do
+    enemy.x = enemy.x + enemy.vx * dt
+    enemy.y = enemy.y + enemy.vy * dt
+    
+    -- Rimbalza sui bordi
+    if enemy.x < 0 or enemy.x > 800 then
+        enemy.vx = -enemy.vx
+    end
+    if enemy.y < 0 or enemy.y > 600 then
+        enemy.vy = -enemy.vy
+    end
+end
+```
+
+**2. Cambio direzione periodico:**
+
+```lua
+enemy.changeTimer = 0
+enemy.changeInterval = math.random(1, 3)
+
+-- In love.update(dt)
+enemy.changeTimer = enemy.changeTimer + dt
+if enemy.changeTimer >= enemy.changeInterval then
+    enemy.vx = math.random(-100, 100)
+    enemy.vy = math.random(-100, 100)
+    enemy.changeTimer = 0
+    enemy.changeInterval = math.random(1, 3)
+end
+```
+
+**3. Movimento sinusoidale/ondulatorio:**
+
+```lua
+enemy.time = 0
+enemy.baseY = enemy.y
+
+-- In love.update(dt)
+enemy.time = enemy.time + dt
+enemy.x = enemy.x + enemy.speed * dt
+enemy.y = enemy.baseY + math.sin(enemy.time * 3) * 50  -- oscilla ±50px
+```
+
+**4. Inseguimento del player:**
+
+```lua
+local dx = player.x - enemy.x
+local dy = player.y - enemy.y
+local dist = math.sqrt(dx*dx + dy*dy)
+if dist > 0 then
+    enemy.x = enemy.x + (dx/dist) * enemy.speed * dt
+    enemy.y = enemy.y + (dy/dist) * enemy.speed * dt
+end
+```
+
 **Formati supportati:**
 - `.wav` (raccomandato per effetti sonori)
 - `.ogg` (raccomandato per musica)
@@ -217,9 +329,16 @@ love2d-random/
 ├── conf.lua       # Configurazione (opzionale)
 ├── README.md      # Questo file
 └── assets/        # Risorse del gioco
-    └── sounds/    # File audio
-        ├── collision1.wav
-        └── alarm.wav
+    ├── sounds/    # File audio
+    │   ├── collision1.wav
+    │   └── alarm.wav
+    └── images/    # Sprite e immagini
+        ├── sfondo.png
+        ├── playerShipBlue.png
+        ├── ufoRed.png
+        ├── ufoGreen.png
+        ├── ufoBlue.png
+        └── ufoYellow.png
 ```
 
 ## 💡 Tips
