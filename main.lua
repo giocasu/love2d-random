@@ -6,7 +6,9 @@ local player = {
     x = 400,
     y = 300,
     speed = 200,
-    size = 50
+    size = 50,
+    rotation = 0,  -- Angolo di rotazione in radianti (0 = su)
+    scale = 0.5
 }
 
 local enemies = {}
@@ -24,6 +26,12 @@ function love.load()
     love.window.setMode(800, 600)
     collisionSound = love.audio.newSource("assets/sounds/collision1.wav", "static")
     alarmSound = love.audio.newSource("assets/sounds/alarm.wav", "static")
+
+    -- Catica lo sfondo
+    backgroundImage = love.graphics.newImage("assets/images/sfondo.png")
+    -- Carica il giocatore
+    playerShipImage = love.graphics.newImage("assets/images/playerShipBlue.png")
+    player.size = playerShipImage:getWidth() * player.scale
     -- Crea alcuni nemici di esempio
     for i = 1, 5 do
         table.insert(enemies, {
@@ -51,17 +59,27 @@ function love.update(dt)
             alarmSound:play()
         end
         -- Movimento del giocatore con le frecce
+        local dx, dy = 0, 0
         if love.keyboard.isDown("right") then
+            dx = 1
             player.x = player.x + player.speed * dt
         end
         if love.keyboard.isDown("left") then
+            dx = -1
             player.x = player.x - player.speed * dt
         end
         if love.keyboard.isDown("up") then
+            dy = -1
             player.y = player.y - player.speed * dt
         end
         if love.keyboard.isDown("down") then
+            dy = 1
             player.y = player.y + player.speed * dt
+        end
+        
+        -- Aggiorna la rotazione in base alla direzione
+        if dx ~= 0 or dy ~= 0 then
+            player.rotation = math.atan2(dy, dx) + math.pi/2  -- +pi/2 perché lo sprite punta verso l'alto
         end
         
         -- Mantieni il giocatore dentro i bordi dello schermo
@@ -69,11 +87,12 @@ function love.update(dt)
         player.y = math.max(player.size/2, math.min(600 - player.size/2, player.y))
         
         -- Controlla collisioni con i nemici
+        local hitboxRadius = player.size * 0.4  -- Hitbox più piccola per compensare aree trasparenti
         for i = #enemies, 1, -1 do
             local enemy = enemies[i]
             local distance = math.sqrt((player.x - enemy.x)^2 + (player.y - enemy.y)^2)
             
-            if distance < (player.size/2 + enemy.size/2) then
+            if distance < (hitboxRadius + enemy.size/2) then
                 -- Raccogli il nemico (in questo caso è un pickup)
                 table.remove(enemies, i)
                 score = score + 10
@@ -92,6 +111,8 @@ end
 
 -- love.draw() viene chiamata per disegnare tutto sullo schermo
 function love.draw()
+    -- Disegna lo sfondo
+    love.graphics.draw(backgroundImage, 0, 0)
     if gameState == "menu" then
         love.graphics.setColor(1, 1, 1)
         love.graphics.printf("LÖVE2D Mini Tutorial", 0, 200, 800, "center")
@@ -100,9 +121,17 @@ function love.draw()
         love.graphics.printf("Raccogli i cerchi verdi!", 0, 310, 800, "center")
         
     elseif gameState == "playing" then
-        -- Disegna il giocatore (blu)
-        love.graphics.setColor(0.2, 0.5, 1)
-        love.graphics.circle("fill", player.x, player.y, player.size/2)
+        -- Disegna il giocatore con rotazione
+        local imgWidth = playerShipImage:getWidth()
+        local imgHeight = playerShipImage:getHeight()
+        love.graphics.draw(
+            playerShipImage,
+            player.x, player.y,           -- posizione
+            player.rotation,               -- rotazione in radianti
+            player.scale, player.scale,                          -- scala x, y
+            imgWidth/2, imgHeight/2        -- origine (centro dell'immagine)
+        )
+        
         
         -- Disegna i nemici/pickup (verdi)
         love.graphics.setColor(0.2, 1, 0.2)
