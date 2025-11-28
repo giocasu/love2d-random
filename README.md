@@ -98,9 +98,43 @@ end
 1. **✅ Aggiungi un timer**: Fai durare il gioco 60 secondi - **COMPLETATO!**
 2. **✅ Aggiungi suoni**: Usa `love.audio` per aggiungere effetti sonori - **COMPLETATO!**
 3. **✅ Aggiungi immagini**: Usa `love.graphics.newImage()` per caricare sprite - **COMPLETATO!**
-4. **Nemici che si muovono**: Fai muovere i nemici casualmente
-5. **Power-up**: Aggiungi oggetti speciali che aumentano la velocità
-6. **High score**: Salva il punteggio migliore usando `love.filesystem`
+4. **✅ Nemici che si muovono**: Fai muovere i nemici casualmente - **COMPLETATO!**
+5. **✅ Power-up**: Aggiungi oggetti speciali che aumentano la velocità - **COMPLETATO!**
+6. **✅ High score**: Salva il punteggio migliore usando `love.filesystem`
+- **COMPLETATO!**
+7. **Musica di fondo**: Riproduci un loop a basso volume durante il gameplay
+8. **Feedback visivo timer**: Colora il timer di rosso negli ultimi 10 secondi
+9. **Pausa**: Aggiungi il tasto `P` per mettere in pausa e mostrare "PAUSA" a schermo
+10. **Scia del giocatore**: Disegna una breve scia/ombra dietro la nave per dare senso di movimento
+
+### 💾 High score con `love.filesystem`
+
+`love.filesystem` legge/scrive nella cartella di salvataggio dedicata (non nella directory del gioco). Esempio minimo:
+
+```lua
+local highScore = 0
+
+local function loadHighScore()
+    local info = love.filesystem.getInfo("highscore.txt")
+    if info then
+        highScore = tonumber(love.filesystem.read("highscore.txt")) or 0
+    end
+end
+
+local function saveHighScore()
+    love.filesystem.write("highscore.txt", tostring(highScore))
+end
+```
+
+Passi pratici:
+- In `love.load()`: chiama `loadHighScore()`.
+- In `love.draw()`: mostra `highScore` nell'HUD.
+- In `love.update()` o quando imposti `gameState = "gameover"`: se `score > highScore` aggiorna e chiama `saveHighScore()`.
+
+Note rapide:
+- Percorso reale: `love.filesystem.getSaveDirectory()` (utile per trovare/azzerare il file).
+- `write` sovrascrive; per file piccoli è ok.
+- Usa `tostring()` quando scrivi e `tonumber()` quando leggi per evitare errori di parsing.
 
 ### 🕐 Timer Implementation Details
 
